@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
+import { AxiosResponse } from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import Poppler from 'node-poppler';
@@ -37,21 +38,40 @@ export class PdfParserService {
   }
 
   async loadPdfFromUrl(url: string) {
+    const extension = url.split('.').pop();
+    if (extension !== 'pdf') {
+      throw new BadRequestException('The file extension is not .pdf');
+    }
+
     const response = await this.httpService.axiosRef({
       url,
       method: 'GET',
       responseType: 'arraybuffer',
     });
-    if (!response.headers['content-type'].includes('application/pdf')) {
-      throw new Error('The given URL does not point to a PDF file');
-    }
 
+    this.checkResponse(response);
+    return Buffer.from(response.data, 'binary');
+  }
+
+  private checkResponse(response: AxiosResponse) {
     if (
       parseInt(response.headers['content-length'] as string, 10) >
       5 * 1024 * 1024
     ) {
       throw new BadRequestException('The given PDF file is too large. Max 5MB');
     }
-    return Buffer.from(response.data, 'binary');
+
+    if (!this.isPdfBuffer(response.data)) {
+      throw new BadRequestException(
+        'The given URL is not a PDF file or the file is corrupted.',
+      );
+    }
+  }
+  //   check for pdf buffer
+  private isPdfBuffer(buffer: Buffer) {
+    const pdfMagicNumber = Buffer.from([0x25, 0x50, 0x44, 0x46]);
+    const bufferStart = buffer.subarray(0, 4);
+
+    return bufferStart.equals(pdfMagicNumber);
   }
 }
