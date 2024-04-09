@@ -1,8 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  PdfExtensionError,
+  PdfNotParsedError,
+  PdfSizeError,
+  pdfMagicNumberError,
+} from './exceptions/exceptions';
 
 import { AxiosResponse } from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+import { Injectable } from '@nestjs/common';
 import Poppler from 'node-poppler';
 
 @Injectable()
@@ -14,14 +20,14 @@ export class PdfParserService {
   async parsePdf(file: Buffer) {
     const poppler = new Poppler(this.configService.get('POPPLER_BIN_PATH'));
 
-    let text = await poppler.pdfToText(file, null, {
+    const output = (await poppler.pdfToText(file, null, {
       maintainLayout: true,
       quiet: true,
-    });
-    if (typeof text === 'string') {
-      text = this.postProcessText(text);
+    })) as any;
+    if (output instanceof Error || output.length === 0) {
+      throw new PdfNotParsedError();
     }
-    return text;
+    return this.postProcessText(output);
   }
   private postProcessText(text: string) {
     const processedText = text
@@ -40,7 +46,7 @@ export class PdfParserService {
   async loadPdfFromUrl(url: string) {
     const extension = url.split('.').pop();
     if (extension !== 'pdf') {
-      throw new BadRequestException('The file extension is not .pdf');
+      throw new PdfExtensionError();
     }
 
     const response = await this.httpService.axiosRef({
@@ -58,20 +64,14 @@ export class PdfParserService {
       parseInt(response.headers['content-length'] as string, 10) >
       5 * 1024 * 1024
     ) {
-      throw new BadRequestException('The given PDF file is too large. Max 5MB');
+      throw new PdfSizeError();
     }
 
-    if (!this.isPdfBuffer(response.data)) {
-      throw new BadRequestException(
-        'The given URL is not a PDF file or the file is corrupted.',
-      );
-    }
-  }
-  //   check for pdf buffer
-  private isPdfBuffer(buffer: Buffer) {
     const pdfMagicNumber = Buffer.from([0x25, 0x50, 0x44, 0x46]);
-    const bufferStart = buffer.subarray(0, 4);
+    const bufferStart = response.data.subarray(0, 5);
 
-    return bufferStart.equals(pdfMagicNumber);
+    if (!bufferStart.equals(pdfMagicNumber)) {
+      throw new pdfMagicNumberError();
+    }
   }
 }
