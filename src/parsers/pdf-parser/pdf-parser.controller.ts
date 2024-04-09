@@ -1,5 +1,6 @@
 import { ApiBody, ApiConsumes, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import {
+  BadRequestException,
   Body,
   Controller,
   ParseFilePipeBuilder,
@@ -16,6 +17,7 @@ import {
   PdfParserUrlResultDto,
 } from './dto/pdf-parser-result.dto';
 import { PdfParserRequestDto } from './dto/pdf-parser-request.dto';
+import { PdfNotParsedError } from './exceptions/exceptions';
 
 const uploadSchema = {
   type: 'object',
@@ -52,22 +54,28 @@ export class PdfParserController {
   async parsePdfFromUpload(
     @UploadedFile(pdfPipe) file: Express.Multer.File,
   ): Promise<PdfParserUploadResultDto> {
-    const text = await this.pdfParserService.parsePdf(file.buffer);
-
-    if (typeof text !== 'string' || text.length === 0) {
-      throw new UnprocessableEntityException('Could not parse given PDF file');
+    try {
+      const text = await this.pdfParserService.parsePdf(file.buffer);
+      return {
+        originalFileName: file.originalname,
+        content: text,
+      };
+    } catch (e) {
+      throw new UnprocessableEntityException(e.message);
     }
-
-    return {
-      originalFileName: file.originalname,
-      content: text,
-    };
   }
 
   @Post('url')
   async parsePdfFromUrl(
     @Body() requestDto: PdfParserRequestDto,
   ): Promise<PdfParserUrlResultDto> {
+    try {
+    } catch (e) {
+      if (e instanceof PdfNotParsedError) {
+        throw new UnprocessableEntityException(e.message);
+      }
+      throw new BadRequestException(e.message);
+    }
     const file = await this.pdfParserService.loadPdfFromUrl(requestDto.url);
     const text = await this.pdfParserService.parsePdf(file);
 
