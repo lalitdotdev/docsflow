@@ -1,3 +1,7 @@
+import {
+  PdfExtensionError,
+  pdfMagicNumberError,
+} from './exceptions/exceptions';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ConfigModule } from '@nestjs/config';
@@ -53,7 +57,7 @@ describe('PdfParserService', () => {
       const url =
         'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.jpg';
       await expect(service.loadPdfFromUrl(url)).rejects.toThrowError(
-        'The file extension is not .pdf',
+        PdfExtensionError,
       );
     });
 
@@ -61,7 +65,7 @@ describe('PdfParserService', () => {
       const url =
         'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.jpg';
       await expect(service.loadPdfFromUrl(url)).rejects.toThrowError(
-        'The file extension is not .pdf',
+        pdfMagicNumberError,
       );
     });
   });
