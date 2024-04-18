@@ -1,7 +1,7 @@
-import { ChainCall, DebugReport } from '../dto/debug.dto';
+import { ChainCall, DebugReport, LlmCall } from '../dto/debug.dto';
+import { ChainValues, LLMResult } from 'langchain/schema';
 
 import { BaseCallbackHandler } from 'langchain/callbacks';
-import { ChainValues } from 'langchain/schema';
 import { Serialized } from 'langchain/load/serializable';
 
 export class DebugCallbackHandler extends BaseCallbackHandler {
@@ -40,5 +40,11 @@ export class DebugCallbackHandler extends BaseCallbackHandler {
       chains: [...(this._debugReport?.chains ?? []), startedChain],
       llms: [...(this._debugReport?.llms ?? [])],
     };
+  }
+  async handleChainEnd(outputs: ChainValues, runId: string): Promise<void> {
+    const endedChain = this._debugReport.chains.find(
+      (chain) => chain.runId === runId,
+    );
+    endedChain.end.outputs = outputs;
   }
 }
