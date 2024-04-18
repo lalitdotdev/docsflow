@@ -47,4 +47,11 @@ export class DebugCallbackHandler extends BaseCallbackHandler {
     );
     endedChain.end.outputs = outputs;
   }
+  async handleChainError(err: any, runId: string): Promise<void> {
+    const erroredChain = this._debugReport.chains.find(
+      (chain) => chain.runId === runId,
+    );
+
+    erroredChain.error.err = err;
+  }
 }
