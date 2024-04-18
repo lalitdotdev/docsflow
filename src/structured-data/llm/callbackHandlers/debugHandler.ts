@@ -54,4 +54,32 @@ export class DebugCallbackHandler extends BaseCallbackHandler {
 
     erroredChain.error.err = err;
   }
+
+  async handleLLMStart(
+    llm: Serialized,
+    prompts: string[],
+    runId: string,
+    parentRunId?: string,
+  ): Promise<void> {
+    const startedLlmCall: LlmCall = {
+      llmName: llm.id.at(-1),
+      parentRunId,
+      runId,
+      start: {
+        prompts,
+      },
+      end: {
+        outputs: null,
+      },
+      error: {
+        err: null,
+      },
+    };
+    this._debugReport = {
+      chainCallCount: this._chainCallCount,
+      llmCallCount: ++this._llmCallCount,
+      chains: [...(this._debugReport?.chains ?? [])],
+      llms: [...(this._debugReport?.llms ?? []), startedLlmCall],
+    };
+  }
 }
