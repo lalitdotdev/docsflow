@@ -82,4 +82,10 @@ export class DebugCallbackHandler extends BaseCallbackHandler {
       llms: [...(this._debugReport?.llms ?? []), startedLlmCall],
     };
   }
+  async handleLLMEnd(output: LLMResult, runId: string): Promise<void> {
+    const endedLlmCall = this._debugReport.llms.find(
+      (llmCall) => llmCall.runId === runId,
+    );
+    endedLlmCall.end.outputs = output;
+  }
 }
