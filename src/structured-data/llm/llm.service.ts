@@ -23,6 +23,15 @@ export class LlmService {
           //   this.logger.warn(`Missing API key for ${model.name} model`);
           throw new LLMApiKeyMissingError(model.name);
         }
+        // creating a new model for the current language model and adding the necessary parameters using ChatOpenAPI API from langchain
+        const llm = new ChatOpenAI({
+          maxConcurrency: 10,
+          maxRetries: 3,
+          modelName: model.name,
+          openAIApiKey: model.apiKey,
+          temperature: 0,
+        });
+        return llm;
       }
       default: {
         // this.logger.warn(`Model ${model.name} was not found`);
