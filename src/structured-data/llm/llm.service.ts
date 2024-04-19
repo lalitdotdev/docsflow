@@ -15,6 +15,7 @@ import { Injectable } from '@nestjs/common';
 import { LLMChain } from 'langchain/chains';
 import { Model } from './types/types';
 import { PromptTemplate } from 'langchain/prompts';
+import { RecursiveCharacterTextSplitter } from 'langchain/dist/text_splitter';
 
 // import { ISOLogger } from '@/logger/isoLogger.service';
 
@@ -69,6 +70,22 @@ export class LlmService {
       //   this.logger.warn('Undefined error thrown');
       throw e;
     }
+  }
+
+  async splitDocument(
+    document: string,
+    params: { chunkSize: number; overlap: number },
+  ) {
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: params?.chunkSize,
+      chunkOverlap: params?.overlap,
+    });
+
+    const output = await splitter.createDocuments([document]);
+    // this.logger.debug(
+    //   `splitDocument created ${output.length} documents (chunks size: ${params.chunkSize}, overlap: ${params.overlap})`,
+    // );
+    return output;
   }
 
   //   Retrieve the available model based on the given model name
