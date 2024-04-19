@@ -4,7 +4,10 @@ import {
   LLMBadRequestReceivedError,
   LLMNotAvailableError,
   PromptTemplateFormatError,
+  RefinePromptsInputVariablesError,
+  RefineReservedChainValuesError,
 } from './exceptions/exceptions';
+import { LLMChain, loadQARefineChain } from 'langchain/chains';
 
 import { BaseLanguageModel } from 'langchain/dist/base_language';
 import { ChainValues } from 'langchain/dist/schema';
@@ -12,10 +15,10 @@ import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ConfigService } from '@nestjs/config';
 import { DebugCallbackHandler } from './callbackHandlers/debugHandler';
 import { Injectable } from '@nestjs/common';
-import { LLMChain } from 'langchain/chains';
 import { Model } from './types/types';
 import { PromptTemplate } from 'langchain/prompts';
 import { RecursiveCharacterTextSplitter } from 'langchain/dist/text_splitter';
+import { RefineCallbackHandler } from './callbackHandlers/refineHandler';
 
 // import { ISOLogger } from '@/logger/isoLogger.service';
 
@@ -86,6 +89,89 @@ export class LlmService {
     //   `splitDocument created ${output.length} documents (chunks size: ${params.chunkSize}, overlap: ${params.overlap})`,
     // );
     return output;
+  }
+
+  async generateRefineOutput(
+    model: Model,
+    initialPromptTemplate: PromptTemplate,
+    refinePromptTemplate: PromptTemplate,
+    chainValues: ChainValues & { input_documents: Document[] },
+    debug: boolean = false,
+  ) {
+    const llm = this.retrieveAvailableModel(model);
+
+    // this.logger.debug(
+    //   `Using model ${model.name} ${model.apiKey ? 'with' : 'without'} API key`,
+    // );
+    if (chainValues['context'] || chainValues['existing_answer']) {
+      // this.logger.error(
+      //   "Reserved chain values 'context' & 'existing_answer' can't be used",
+      // );
+      throw new RefineReservedChainValuesError('context or existing_answer');
+    }
+
+    this.throwErrorIfInputVariableMissing(
+      'initialPromptTemplate',
+      'context',
+      initialPromptTemplate.inputVariables,
+    );
+
+    this.throwErrorIfInputVariableMissing(
+      'refinePromptTemplate',
+      'context',
+      refinePromptTemplate.inputVariables,
+    );
+
+    this.throwErrorIfInputVariableMissing(
+      'refinePromptTemplate',
+      'existing_answer',
+      refinePromptTemplate.inputVariables,
+    );
+
+    const refineChain = loadQARefineChain(llm, {
+      questionPrompt: initialPromptTemplate,
+      refinePrompt: refinePromptTemplate,
+    });
+
+    try {
+      const debugHandler = new DebugCallbackHandler();
+      const handler = new RefineCallbackHandler();
+
+      const output = await refineChain.call(
+        chainValues,
+        debug ? [handler, debugHandler] : [handler],
+      );
+      //this.logger.debug('generateRefineOutput completed successfully');
+      return {
+        output,
+        llmCallCount: handler.llmCallCount,
+        debugReport: debug ? debugHandler.debugReport : null,
+      };
+    } catch (e) {
+      if (e?.response?.status && e?.response?.status === 401) {
+        //this.logger.warn('LLMApiKeyInvalidError thrown');
+        throw new LLMApiKeyInvalidError(model.name);
+      }
+      if (e?.response?.status && e?.response?.status === 400) {
+        //this.logger.warn('LLMBadRequestReceivedError thrown');
+        throw new LLMBadRequestReceivedError(model.name);
+      }
+      //this.logger.warn('Undefined error thrown');
+      throw e;
+    }
+  }
+
+  private throwErrorIfInputVariableMissing(
+    templateName: string,
+    variableName: string,
+    inputVariables: string[],
+  ) {
+    if (!inputVariables.includes(variableName)) {
+      // this.logger.error(
+      //   `Input variable ${variableName} is missing from ${templateName}`,
+      // );
+      throw new RefinePromptsInputVariablesError(templateName, variableName);
+    }
   }
 
   //   Retrieve the available model based on the given model name
