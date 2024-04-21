@@ -67,5 +67,27 @@ describe('LLMService', () => {
       expect(output.text).toBeTruthy();
       expect(debugReport).toBeNull();
     }, 30000);
+
+    // It should generate an output with a debug report if the debug flag is set to true.
+    it('should generate an output with a debug report', async () => {
+      const { output, debugReport } = await service.generateOutput(
+        model,
+        promptTemplate,
+        {
+          product: 'cars',
+        },
+        true,
+      );
+
+      expect(output).toBeDefined();
+      expect(output).toHaveProperty('text');
+      expect(output.text).toBeTruthy();
+
+      expect(debugReport).toBeDefined();
+      expect(debugReport).toHaveProperty('chainCallCount');
+      expect(debugReport).toHaveProperty('llmCallCount');
+      expect(debugReport).toHaveProperty('chains');
+      expect(debugReport).toHaveProperty('llms');
+    }, 30000);
   });
 });
