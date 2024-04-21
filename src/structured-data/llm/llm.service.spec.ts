@@ -89,5 +89,21 @@ describe('LLMService', () => {
       expect(debugReport).toHaveProperty('chains');
       expect(debugReport).toHaveProperty('llms');
     }, 30000);
+
+    // It should throw if the given model is not available.
+    it('should throw if the given model is not available', async () => {
+      const model = {
+        apiKey: configService.get('OPENAI_API_KEY'),
+        name: 'gpt-42',
+      };
+
+      // Expect the model to be available in the database and available to use.
+      await expect(
+        service.generateOutput(model, promptTemplate, {
+          product: 'cars',
+        }),
+      ).rejects.toThrow(LLMNotAvailableError);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
   });
 });
