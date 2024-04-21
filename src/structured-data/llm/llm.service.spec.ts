@@ -1,7 +1,14 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  LLMApiKeyInvalidError,
+  LLMApiKeyMissingError,
+  LLMNotAvailableError,
+  PromptTemplateFormatError,
+} from './exceptions/exceptions';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { LlmService } from './llm.service';
+import { PromptTemplate } from 'langchain/prompts';
 
 // import { ISOLogger } from '@/logger/isoLogger.service';
 
@@ -11,7 +18,10 @@ jest.retryTimes(3);
 describe('LLMService', () => {
   let service: LlmService;
   let configService: ConfigService;
-
+  let model: {
+    apiKey: string;
+    name: string;
+  };
   //   let logger: ISOLogger;
 
   beforeEach(async () => {
@@ -24,7 +34,7 @@ describe('LLMService', () => {
     configService = module.get<ConfigService>(ConfigService);
     // logger = await module.resolve<ISOLogger>(ISOLogger);
 
-    let model = {
+    model = {
       apiKey: configService.get('OPENAI_API_KEY'),
       name: 'gpt-3.5-turbo',
     };
@@ -35,4 +45,27 @@ describe('LLMService', () => {
   });
 
   // Create Test Suite for generateOutput method in LLMService. It should be defined in the module itself and should return an object with output and debugReport properties.
+
+  describe('generateOutput()', () => {
+    // Create a new PromptTemplate instance with the given template and input variables.
+    const promptTemplate = new PromptTemplate({
+      template: 'What is a good name for a company that makes {product}?',
+      inputVariables: ['product'],
+    });
+
+    // It should generate an output with the given model, prompt template, and chain values.
+    it('should generate an output', async () => {
+      const { output, debugReport } = await service.generateOutput(
+        model,
+        promptTemplate,
+        {
+          product: 'cars',
+        },
+      );
+      expect(output).toBeDefined();
+      expect(output).toHaveProperty('text');
+      expect(output.text).toBeTruthy();
+      expect(debugReport).toBeNull();
+    }, 30000);
+  });
 });
