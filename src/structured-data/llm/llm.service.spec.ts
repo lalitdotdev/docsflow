@@ -105,5 +105,18 @@ describe('LLMService', () => {
       ).rejects.toThrow(LLMNotAvailableError);
       //   expect(logger.warn).toHaveBeenCalled();
     });
+
+    it('should throw if the given model needs a missing api key', async () => {
+      const model = {
+        name: 'gpt-3.5-turbo',
+      };
+
+      await expect(
+        service.generateOutput(model, promptTemplate, {
+          product: 'cars',
+        }),
+      ).rejects.toThrow(LLMApiKeyMissingError);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
   });
 });
