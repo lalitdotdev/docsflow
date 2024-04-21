@@ -118,5 +118,19 @@ describe('LLMService', () => {
       ).rejects.toThrow(LLMApiKeyMissingError);
       //   expect(logger.warn).toHaveBeenCalled();
     });
+
+    it('should throw if the given api key is invalid', async () => {
+      const model = {
+        apiKey: 'invalid',
+        name: 'gpt-3.5-turbo',
+      };
+
+      await expect(
+        service.generateOutput(model, promptTemplate, {
+          product: 'cars',
+        }),
+      ).rejects.toThrow(LLMApiKeyInvalidError);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
   });
 });
