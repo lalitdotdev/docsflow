@@ -142,4 +142,64 @@ describe('LLMService', () => {
       //   expect(logger.error).toHaveBeenCalled();
     });
   });
+
+  // create test suit for generateRefineOutput method in LLMService. It should generate an output with the given model, initial prompt template, refine prompt template, and chain values.
+  describe('generateRefineOutput()', () => {
+    const text = `
+        This is the first sentence of the testing text.\n
+        This is the second sentence of the testing text. It contains the tagged value to output: llm-structurizer
+        `;
+    const initialPromptTemplate = new PromptTemplate({
+      template: `Given the following text, please write the value to output.
+        ---------------------
+        {context}
+        ---------------------
+        Output:
+        `,
+      inputVariables: ['context'],
+    });
+    const refinePromptTemplate = new PromptTemplate({
+      template: `
+        Given the following text, please only write the tagged value to output.
+        ---------------------
+        You have provided an existing output:
+        {existing_answer}
+
+        We have the opportunity to refine the existing output (only if needed) with some more context below.
+        ---------------------
+        Context:
+        {context}
+        ---------------------
+        Given the new context, refine the original output to give a better answer.
+        If the context isn't useful, return the existing output.
+        `,
+      inputVariables: ['existing_answer', 'context'],
+    });
+    const dummyPrompt = new PromptTemplate({
+      template: 'What is a good name for a company that makes {product}?',
+      inputVariables: ['product'],
+    });
+
+    it('should generate the correct output from a chunked document', async () => {
+      const documents = (await service.splitDocument(text, {
+        chunkSize: 120,
+        overlap: 0,
+      })) as any;
+
+      const { output, llmCallCount, debugReport } =
+        await service.generateRefineOutput(
+          model,
+          initialPromptTemplate,
+          refinePromptTemplate,
+          {
+            input_documents: documents,
+          },
+        );
+
+      expect(output).toBeDefined();
+      expect(output['output_text']).toContain('llm-structurizer');
+      expect(llmCallCount).toBe(2);
+      expect(debugReport).toBeNull();
+    }, 30000);
+  });
 });
