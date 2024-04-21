@@ -216,6 +216,8 @@ describe('LLMService', () => {
       ).rejects.toThrow(LLMNotAvailableError);
       //   expect(logger.warn).toHaveBeenCalled();
     });
+
+    // throw error if there are reserved input variables in chainValues
     it('should throw if there are reserved input variables in chainValues', async () => {
       await expect(
         service.generateRefineOutput(model, dummyPrompt, dummyPrompt, {
@@ -227,6 +229,7 @@ describe('LLMService', () => {
       );
       //   expect(logger.error).toHaveBeenCalled();
     });
+    // Throw error if the initial prompt template does not have the context input variable.
     it('should throw if the initial prompt template does not have the context input variable', async () => {
       const initialPromptTemplate = new PromptTemplate({
         template: 'What is a good name for a company that makes {product}?',
@@ -244,6 +247,28 @@ describe('LLMService', () => {
         ),
       ).rejects.toThrow(
         'initialPromptTemplate is missing mandatory input variable: context.',
+      );
+      //   expect(logger.error).toHaveBeenCalled();
+    });
+
+    // Throw error if the refine prompt template does not have the context input variable.
+    it('should throw if the refine prompt template does not have the context input variable', async () => {
+      const refinePromptTemplate = new PromptTemplate({
+        template: 'What is a good name for a company that makes {product}?',
+        inputVariables: ['product'],
+      });
+
+      await expect(
+        service.generateRefineOutput(
+          model,
+          initialPromptTemplate,
+          refinePromptTemplate,
+          {
+            input_documents: [],
+          },
+        ),
+      ).rejects.toThrow(
+        'refinePromptTemplate is missing mandatory input variable: context.',
       );
       //   expect(logger.error).toHaveBeenCalled();
     });
