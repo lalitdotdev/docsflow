@@ -272,5 +272,27 @@ describe('LLMService', () => {
       );
       //   expect(logger.error).toHaveBeenCalled();
     });
+
+    // Throw error if the refine prompt template does not have the existing_answer input variable.
+    it('should throw if the refine prompt template does not have the existing_answer input variable', async () => {
+      const refinePromptTemplate = new PromptTemplate({
+        template: 'What is a good name for a company that makes {context}?',
+        inputVariables: ['context'],
+      });
+
+      await expect(
+        service.generateRefineOutput(
+          model,
+          initialPromptTemplate,
+          refinePromptTemplate,
+          {
+            input_documents: [],
+          },
+        ),
+      ).rejects.toThrow(
+        'refinePromptTemplate is missing mandatory input variable: existing_answer.',
+      );
+      //   expect(logger.error).toHaveBeenCalled();
+    });
   });
 });
