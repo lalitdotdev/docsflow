@@ -201,5 +201,20 @@ describe('LLMService', () => {
       expect(llmCallCount).toBe(2);
       expect(debugReport).toBeNull();
     }, 30000);
+
+    // Throw error if the model is not available.
+    it('should throw if the model given is not available', async () => {
+      const model = {
+        apiKey: configService.get('OPENAI_API_KEY'),
+        name: 'gpt-42',
+      };
+
+      await expect(
+        service.generateRefineOutput(model, dummyPrompt, dummyPrompt, {
+          input_documents: [],
+        }),
+      ).rejects.toThrow(LLMNotAvailableError);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
   });
 });
