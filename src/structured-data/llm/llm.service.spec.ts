@@ -132,5 +132,14 @@ describe('LLMService', () => {
       ).rejects.toThrow(LLMApiKeyInvalidError);
       //   expect(logger.warn).toHaveBeenCalled();
     });
+
+    it('should throw if the chain values do not match the input variables of the prompt template', async () => {
+      await expect(
+        service.generateOutput(model, promptTemplate, {
+          wrongValue: 'cars',
+        }),
+      ).rejects.toThrow(PromptTemplateFormatError);
+      //   expect(logger.error).toHaveBeenCalled();
+    });
   });
 });
