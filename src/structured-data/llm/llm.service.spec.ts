@@ -216,5 +216,16 @@ describe('LLMService', () => {
       ).rejects.toThrow(LLMNotAvailableError);
       //   expect(logger.warn).toHaveBeenCalled();
     });
+    it('should throw if there are reserved input variables in chainValues', async () => {
+      await expect(
+        service.generateRefineOutput(model, dummyPrompt, dummyPrompt, {
+          context: 'Not allowed',
+          input_documents: [],
+        }),
+      ).rejects.toThrow(
+        `Reserved chain value context or existing_answer cannot be used as an input variable.`,
+      );
+      //   expect(logger.error).toHaveBeenCalled();
+    });
   });
 });
