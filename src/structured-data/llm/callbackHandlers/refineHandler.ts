@@ -1,4 +1,4 @@
-import { BaseCallbackHandler } from 'langchain/callbacks';
+import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 
 export class RefineCallbackHandler extends BaseCallbackHandler {
   name = 'RefineCallbackHandler';
