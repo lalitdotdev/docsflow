@@ -11,13 +11,13 @@ import { LLMChain, loadQARefineChain } from 'langchain/chains';
 
 import { BaseLanguageModel } from 'langchain/dist/base_language';
 import { ChainValues } from 'langchain/dist/schema';
-import { ChatOpenAI } from 'langchain/chat_models/openai';
+import { ChatOpenAI } from '@langchain/openai';
 import { ConfigService } from '@nestjs/config';
 import { DebugCallbackHandler } from './callbackHandlers/debugHandler';
 import { Injectable } from '@nestjs/common';
 import { Model } from './types/types';
 import { PromptTemplate } from 'langchain/prompts';
-import { RecursiveCharacterTextSplitter } from 'langchain/dist/text_splitter';
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { RefineCallbackHandler } from './callbackHandlers/refineHandler';
 
 // import { ISOLogger } from '@/logger/isoLogger.service';
@@ -25,6 +25,7 @@ import { RefineCallbackHandler } from './callbackHandlers/refineHandler';
 @Injectable()
 export class LlmService {
   constructor(private configService: ConfigService) {}
+
   async generateOutput(
     model: Model,
     promptTemplate: PromptTemplate,
@@ -48,6 +49,7 @@ export class LlmService {
     const llmChain = new LLMChain({
       llm,
       prompt: promptTemplate,
+      verbose: true,
     });
 
     console.log('llmChain', llmChain);
@@ -161,6 +163,7 @@ export class LlmService {
     }
   }
 
+  //   logs are because of the missing api -- open API
   private throwErrorIfInputVariableMissing(
     templateName: string,
     variableName: string,
@@ -174,7 +177,7 @@ export class LlmService {
     }
   }
 
-  //   Retrieve the available model based on the given model name
+  //   Retrieve the available model based on the given model name -- SAME ISSUE
   private retrieveAvailableModel(model: Model): BaseLanguageModel {
     switch (model.name) {
       case 'gpt-3.5-turbo':
