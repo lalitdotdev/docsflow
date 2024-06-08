@@ -50,4 +50,34 @@ export class JsonService {
       throw new InvalidJsonOutputError();
     }
   }
+
+  async extractWithSchemaAndRefine(
+    model: Model,
+    text: string,
+    schema: string,
+    refineParams?: RefineParams,
+    debug = false,
+  ) {
+    const params = refineParams || this.defaultRefineParams;
+    const documents = await this.llmService.splitDocument(text, params);
+    const { output, llmCallCount, debugReport } =
+      await this.llmService.generateRefineOutput(
+        model,
+        jsonZeroShotSchemaExtraction,
+        jsonZeroShotSchemaExtractionRefine,
+        {
+          input_documents: documents,
+          jsonSchema: schema,
+        },
+        debug,
+      );
+    try {
+      const json: object = JSON.parse(output.output_text);
+      //   this.logger.debug('extractWithSchemaAndRefine: json parsed successfully');
+      return { json, refineRecap: { ...params, llmCallCount }, debugReport };
+    } catch (e) {
+      //   this.logger.warn('extractWithSchemaAndRefine: json parsing failed');
+      throw new InvalidJsonOutputError();
+    }
+  }
 }
