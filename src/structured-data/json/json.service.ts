@@ -80,4 +80,30 @@ export class JsonService {
       throw new InvalidJsonOutputError();
     }
   }
+
+  async extractWithExample(
+    model: Model,
+    text: string,
+    example: { input: string; output: string },
+    debug = false,
+  ) {
+    const { output, debugReport } = await this.llmService.generateOutput(
+      model,
+      jsonOneShotExtraction,
+      {
+        context: text,
+        exampleInput: example.input,
+        exampleOutput: example.output,
+      },
+      debug,
+    );
+    try {
+      const json = JSON.parse(output.text);
+      //   this.logger.debug('extractWithExample: json parsed successfully');
+      return { json, debugReport };
+    } catch (e) {
+      //   this.logger.warn('extractWithExample: json parsing failed');
+      throw new InvalidJsonOutputError();
+    }
+  }
 }
