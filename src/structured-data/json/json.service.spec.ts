@@ -60,4 +60,33 @@ describe('JsonService', () => {
       //   expect(logger.warn).toHaveBeenCalled();
     });
   });
+
+  describe('extractWithExample()', () => {
+    const text = 'This is a text';
+    const example = {
+      input: 'This is a text',
+      output: '{"title": "This is a text"}',
+    };
+
+    it('should return a json object', async () => {
+      const { json } = await service.extractWithExample(model, text, example);
+
+      expect(json).toBeDefined();
+      expect(json).toHaveProperty('title');
+    }, 30000);
+
+    it('should throw an error if the output is not a valid json', async () => {
+      jest.spyOn(llmService, 'generateOutput').mockResolvedValue({
+        output: {
+          text: '{"title": "This is a text"',
+        },
+        debugReport: null,
+      });
+
+      await expect(
+        service.extractWithExample(model, text, example),
+      ).rejects.toThrow(InvalidJsonOutputError);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
+  });
 });
