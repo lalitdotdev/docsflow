@@ -7,30 +7,40 @@ import {
 } from './exceptions/exceptions';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { LlmService } from './llm.service';
-import { PromptTemplate } from 'langchain/prompts';
-
 // import { ISOLogger } from '@/logger/isoLogger.service';
+import { LLMService } from './llm.service';
+import { PromptTemplate } from '@langchain/core/prompts';
 
 jest.retryTimes(3);
 
-// Create Test Suite for LLMService.
 describe('LLMService', () => {
-  let service: LlmService;
+  let service: LLMService;
   let configService: ConfigService;
+  //   let logger: ISOLogger;
   let model: {
     apiKey: string;
     name: string;
   };
-  //   let logger: ISOLogger;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [ConfigModule.forRoot()],
-      providers: [LlmService],
+      providers: [
+        LLMService,
+        // {
+        //   //   provide: ISOLogger,
+        //   useValue: {
+        //     debug: jest.fn(),
+        //     log: jest.fn(),
+        //     warn: jest.fn(),
+        //     error: jest.fn(),
+        //     setContext: jest.fn(),
+        //   },
+        // },
+      ],
     }).compile();
 
-    service = module.get<LlmService>(LlmService);
+    service = module.get<LLMService>(LLMService);
     configService = module.get<ConfigService>(ConfigService);
     // logger = await module.resolve<ISOLogger>(ISOLogger);
 
@@ -181,10 +191,10 @@ describe('LLMService', () => {
     });
 
     it('should generate the correct output from a chunked document', async () => {
-      const documents = (await service.splitDocument(text, {
+      const documents = await service.splitDocument(text, {
         chunkSize: 120,
         overlap: 0,
-      })) as any;
+      });
 
       const { output, llmCallCount, debugReport } =
         await service.generateRefineOutput(
@@ -202,7 +212,33 @@ describe('LLMService', () => {
       expect(debugReport).toBeNull();
     }, 30000);
 
-    // Throw error if the model is not available.
+    it('should generate the correct output from a chunked document with a debug report', async () => {
+      const documents = await service.splitDocument(text, {
+        chunkSize: 120,
+        overlap: 0,
+      });
+
+      const { output, llmCallCount, debugReport } =
+        await service.generateRefineOutput(
+          model,
+          initialPromptTemplate,
+          refinePromptTemplate,
+          {
+            input_documents: documents,
+          },
+          true,
+        );
+
+      expect(output).toBeDefined();
+      expect(output['output_text']).toContain('llm-structurizer');
+      expect(llmCallCount).toBe(2);
+      expect(debugReport).toBeDefined();
+      expect(debugReport).toHaveProperty('chainCallCount');
+      expect(debugReport).toHaveProperty('llmCallCount');
+      expect(debugReport).toHaveProperty('chains');
+      expect(debugReport).toHaveProperty('llms');
+    }, 30000);
+
     it('should throw if the model given is not available', async () => {
       const model = {
         apiKey: configService.get('OPENAI_API_KEY'),
