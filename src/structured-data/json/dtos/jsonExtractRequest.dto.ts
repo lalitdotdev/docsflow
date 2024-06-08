@@ -115,7 +115,26 @@ class SchemaRequestDto {
   refine?: boolean | RefineParams;
 }
 
+class ExampleRequestDto {
+  @ApiProperty({
+    description: 'example input text',
+  })
+  @IsNotEmpty()
+  exampleInput: string;
+
+  @ApiProperty({
+    description: 'example of desired json output',
+  })
+  @IsJSON()
+  exampleOutput: string;
+}
+
 export class JsonExtractSchemaRequestDto extends IntersectionType(
   JsonExtractRequestDto,
   SchemaRequestDto,
+) {}
+
+export class JsonExtractExampleRequestDto extends IntersectionType(
+  JsonExtractRequestDto,
+  ExampleRequestDto,
 ) {}
