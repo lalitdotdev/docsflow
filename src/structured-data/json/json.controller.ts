@@ -113,4 +113,58 @@ export class JsonController {
     }
     throw new InternalServerErrorException();
   }
+
+  @ApiOperation({
+    summary:
+      'Return structured data from text as json using an example of input and output',
+    description: `This endpoint returns structured data from input text as json.
+    It accepts a fully featured example with a given input text and a desired output json which will be used for data extraction.
+    If chunking is needed, the zero-shot variant with a schema is better suited for the task.\n
+
+    Available models: gpt-3.5-turbo, gpt-3.5-turbo-16k, gpt-4
+    `,
+  })
+  @ApiOkResponse({
+    type: JsonExtractResultDto,
+    description:
+      'The text was successfully structured as json. The output is a valid json object.',
+  })
+  @ApiBody({
+    type: JsonExtractExampleRequestDto,
+    description:
+      'Request body containing text to process as json and extraction parameters',
+  })
+  @HttpCode(200)
+  @Post('example')
+  async extractExample(@Body() request: JsonExtractExampleRequestDto) {
+    const { text, model, debug, exampleInput, exampleOutput } = request;
+    try {
+      const { json, debugReport } = await this.jsonService.extractWithExample(
+        model,
+        text,
+        {
+          input: exampleInput,
+          output: exampleOutput,
+        },
+        debug,
+      );
+
+      const response: JsonExtractResultDto = {
+        model: model.name,
+        refine: false,
+        output: JSON.stringify(json),
+        debug: debug ? debugReport : undefined,
+      };
+
+      //   this.logger.debug(
+      //     'Request for json extraction with example processed successfully',
+      //   );
+      return response;
+    } catch (e) {
+      if (e instanceof InvalidJsonOutputError) {
+        throw new UnprocessableEntityException(e.message);
+      }
+      throw new InternalServerErrorException();
+    }
+  }
 }
