@@ -148,4 +148,89 @@ describe('JsonController', () => {
       ).rejects.toThrow(BadRequestException);
     });
   });
+  describe('extractExample()', () => {
+    const text = 'This is a text';
+    const example = {
+      input: 'This is a text',
+      output: '{"title": "This is a text"}',
+    };
+
+    it('should return a JsonExtractResultDto from a correct data structuring request', async () => {
+      const json = await controller.extractExample({
+        text,
+        model,
+        exampleInput: example.input,
+        exampleOutput: example.output,
+      });
+
+      expect(json).toBeDefined();
+      expect(json).toMatchObject({
+        model: expect.any(String),
+        output: expect.any(String),
+      });
+      expect(() => JSON.parse(json.output)).not.toThrow();
+    }, 30000);
+    it('should throw a UnprocessableEntityException if the output is not a valid json', async () => {
+      jest.spyOn(service, 'extractWithExample').mockImplementation(async () => {
+        throw new InvalidJsonOutputError();
+      });
+
+      await expect(
+        controller.extractExample({
+          text,
+          model,
+          exampleInput: example.input,
+          exampleOutput: example.output,
+        }),
+      ).rejects.toThrow(UnprocessableEntityException);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
+    it('should throw a UnprocessableEntityException if the llm could not generate an output', async () => {
+      jest.spyOn(service, 'extractWithExample').mockImplementation(async () => {
+        throw new LLMBadRequestReceivedError();
+      });
+
+      await expect(
+        controller.extractExample({
+          text,
+          model,
+          exampleInput: example.input,
+          exampleOutput: example.output,
+        }),
+      ).rejects.toThrow(UnprocessableEntityException);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
+    it('should throw a BadRequestException if the given api key is missing', async () => {
+      const model = {
+        name: 'gpt-3.5-turbo',
+      };
+
+      await expect(
+        controller.extractExample({
+          text,
+          model,
+          exampleInput: example.input,
+          exampleOutput: example.output,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
+
+    it('should throw a BadRequestException if the given api key is invalid', async () => {
+      const model = {
+        name: 'gpt-3.5-turbo',
+        apiKey: 'invalid',
+      };
+
+      await expect(
+        controller.extractExample({
+          text,
+          model,
+          exampleInput: example.input,
+          exampleOutput: example.output,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      //   expect(logger.warn).toHaveBeenCalled();
+    });
+  });
 });
