@@ -39,6 +39,7 @@ export class LLMService {
     //   `Using model ${model.name} ${model.apiKey ? 'with' : 'without'} API key`,
     // );
 
+    // Check if the prompt template matches the input variables
     try {
       await promptTemplate.format(chainValues);
     } catch (e) {
@@ -46,15 +47,21 @@ export class LLMService {
       throw new PromptTemplateFormatError();
     }
 
+    // Create a new LLMChain instance with the given LLM and prompt template
     const llmChain = new LLMChain({
       llm,
       prompt: promptTemplate,
+      verbose: true,
     });
 
+    console.log('llmChain', llmChain);
+
+    // Call the LLMChain instance with the given chain values and the given debug handler function
     try {
       const handler = new DebugCallbackHandler();
       const output = await llmChain.call(chainValues, debug ? [handler] : []);
 
+      console.log('simple output', output);
       //   this.logger.debug(`generateOutput completed successfully`);
 
       return { output, debugReport: debug ? handler.debugReport : null };
@@ -77,7 +84,7 @@ export class LLMService {
     initialPromptTemplate: PromptTemplate,
     refinePromptTemplate: PromptTemplate,
     chainValues: ChainValues & { input_documents: Document[] },
-    debug = false,
+    debug: boolean = false,
   ) {
     const llm = this.retrieveAvailableModel(model);
     // this.logger.debug(
@@ -108,7 +115,6 @@ export class LLMService {
       'existing_answer',
       refinePromptTemplate.inputVariables,
     );
-
     const refineChain = loadQARefineChain(llm, {
       questionPrompt: initialPromptTemplate,
       refinePrompt: refinePromptTemplate,
@@ -118,6 +124,9 @@ export class LLMService {
       const handler = new RefineCallbackHandler();
       const debugHandler = new DebugCallbackHandler();
 
+      //   Loads a RefineQAChain based on the provided parameters. It takes an LLM instance and RefineQAChainParams as parameters.
+
+      //   @deprecated call
       const output = await refineChain.call(
         chainValues,
         debug ? [handler, debugHandler] : [handler],
@@ -175,6 +184,7 @@ export class LLMService {
     }
   }
 
+  //   Retrieve the available model based on the given model name -- SAME ISSUE
   private retrieveAvailableModel(model: Model): BaseLanguageModel {
     switch (model.name) {
       case 'gpt-3.5-turbo':
@@ -184,6 +194,7 @@ export class LLMService {
           //   this.logger.warn(`Missing API key for ${model.name} model`);
           throw new LLMApiKeyMissingError(model.name);
         }
+        // creating a new model for the current language model and adding the necessary parameters using ChatOpenAPI API from langchain
         const llm = new ChatOpenAI({
           maxConcurrency: 10,
           maxRetries: 3,
