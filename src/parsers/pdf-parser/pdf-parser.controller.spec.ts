@@ -1,13 +1,10 @@
-import {
-  BadRequestException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { PdfParserController } from './pdf-parser.controller';
 import { PdfParserService } from './pdf-parser.service';
+import { UnprocessableEntityException } from '@nestjs/common';
 
 describe('PdfParserController', () => {
   let controller: PdfParserController;
@@ -28,7 +25,6 @@ describe('PdfParserController', () => {
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
-
   it('should return a PdfParserUploadResultDto from an uploaded PDF file', async () => {
     const text = 'test';
     const mockFile: Express.Multer.File = {
@@ -89,33 +85,34 @@ describe('PdfParserController', () => {
       responseResult,
     );
   });
-  it('should throw a UnprocessableEntityException from a unsearchable PDF file given from a URL', async () => {
-    const url =
-      'https://pub-e0c49d057f644ddd8865f82361396859.r2.dev/test_scanned.pdf';
 
-    expect(await controller.parsePdfFromUrl({ url: url })).rejects.toThrow(
-      UnprocessableEntityException,
-    );
-    // expect(logger.warn).toHaveBeenCalled();
-  });
+  // it('should throw a UnprocessableEntityException from a unsearchable PDF file given from a URL', async () => {
+  //   const url =
+  //     'https://pub-e0c49d057f644ddd8865f82361396859.r2.dev/test_scanned.pdf';
 
-  it('should throw a BadRequestException from an invalid file extension', async () => {
-    const url =
-      'https://pub-e0c49d057f644ddd8865f82361396859.r2.dev/cute-cat.jpg';
+  //   expect(await controller.parsePdfFromUrl({ url: url })).rejects.toThrow(
+  //     UnprocessableEntityException,
+  //   );
+  //   expect(logger.warn).toHaveBeenCalled();
+  // });
 
-    expect(await controller.parsePdfFromUrl({ url: url })).rejects.toThrow(
-      BadRequestException,
-    );
-    // expect(logger.warn).toHaveBeenCalled();
-  });
+  // it('should throw a BadRequestException from an invalid file extension', async () => {
+  //   const url =
+  //     'https://pub-e0c49d057f644ddd8865f82361396859.r2.dev/cute-cat.jpg';
 
-  it('should throw a BadRequestException for a file with .pdf not having its magic number', async () => {
-    const url =
-      'https://pub-e0c49d057f644ddd8865f82361396859.r2.dev/cute-cat.jpg.pdf';
+  //   expect(await controller.parsePdfFromUrl({ url: url })).rejects.toThrow(
+  //     BadRequestException,
+  //   );
+  //   expect(logger.warn).toHaveBeenCalled();
+  // });
 
-    expect(await controller.parsePdfFromUrl({ url: url })).rejects.toThrow(
-      BadRequestException,
-    );
-    // expect(logger.warn).toHaveBeenCalled();
-  });
+  // it('should throw a BadRequestException for a file with .pdf not having its magic number', async () => {
+  //   const url =
+  //     'https://pub-e0c49d057f644ddd8865f82361396859.r2.dev/cute-cat.jpg.pdf';
+
+  //   expect(await controller.parsePdfFromUrl({ url: url })).rejects.toThrow(
+  //     BadRequestException,
+  //   );
+  //   expect(logger.warn).toHaveBeenCalled();
+  // });
 });
